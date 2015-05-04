@@ -12,7 +12,8 @@ if [ ! -e /usr/local/src/drush ]; then
       --ignore-platform-reqs
 else
   cd /usr/local/src/drush
-  git pull origin "${DRUSH_VERSION}"
+  git fetch origin
+  git checkout -f "${DRUSH_VERSION}"
   /usr/local/bin/composer update \
       --no-interaction \
       --no-progress \
