@@ -21,10 +21,6 @@ if [ "${SERVICE_ACCT_PRIVATE_KEY}" != 'CHANGE_ME' ]; then
   echo "### Setting private key for ${SERVICE_ACCT}"
   echo "${SERVICE_ACCT_PRIVATE_KEY}" > ${SERVICE_ACCT_HOME}/.ssh/id_rsa
   cp ${SERVICE_ACCT_HOME}/.ssh/id_rsa /root/.ssh/id_rsa
-else
-  echo "### ${SERVICE_ACCT} and root accts have no id_rsa because SERVICE_ACCT_PRIVATE_KEY==\"CHANGE_ME\""
-  rm -f ${SERVICE_ACCT_HOME}/.ssh/id_rsa
-  rm -f /root/.ssh/id_rsa
 fi
 
 AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
@@ -43,10 +39,6 @@ if [ "${SERVICE_ACCT_PUBLIC_KEY}" != 'CHANGE_ME' ]; then
   echo "### Adding public key for ${SERVICE_ACCT} to ${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
   echo "${SERVICE_ACCT_PUBLIC_KEY}" >> ${SERVICE_ACCT_HOME}/.ssh/id_rsa.pub
   cp ${SERVICE_ACCT_HOME}/.ssh/id_rsa.pub /root/.ssh/id_rsa.pub
-else
-  echo "### ${SERVICE_ACCT} and root accts have no id_rsa.pub because SERVICE_ACCT_PUBLIC_KEY==\"CHANGE_ME\""
-  rm -f ${SERVICE_ACCT_HOME}/.ssh/id_rsa
-  rm -f /root/.ssh/id_rsa
 fi
 
 chown -R "${SERVICE_ACCT}:${SERVICE_ACCT}" "${SERVICE_ACCT_HOME}/.ssh"
