@@ -1,5 +1,8 @@
 #!/bin/bash
 
+SERVICE_ACCT_SSH_DIR="${SERVICE_ACCT_HOME}/.ssh"
+AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/authorized_keys"
+
 if [ "${SERVICE_ACCT_PASSWORD}" != 'CHANGE_ME' ]; then
   echo "### Changing service acct password for ${SERVICE_ACCT}"
   echo "${SERVICE_ACCT}:${SERVICE_ACCT_PASSWORD}" | chpasswd
@@ -7,9 +10,9 @@ else
   echo "### Leaving service acct ${SERVICE_ACCT} without a password"
 fi
 
-if [[ ! -e "${SERVICE_ACCT_HOME}/.ssh" ]]; then
-  mkdir -p ${SERVICE_ACCT_HOME}/.ssh
-  chmod 700 ${SERVICE_ACCT_HOME}/.ssh
+if [[ ! -e "${SERVICE_ACCT_SSH_DIR}" ]]; then
+  mkdir -p "${SERVICE_ACCT_SSH_DIR}"
+  chmod 700 "${SERVICE_ACCT_SSH_DIR}"
 fi
 
 if [[ ! -e "/root/.ssh" ]]; then
@@ -19,15 +22,13 @@ fi
 
 if [ "${SERVICE_ACCT_PRIVATE_KEY}" != 'CHANGE_ME' ]; then
   echo "### Setting private key for ${SERVICE_ACCT}"
-  echo "${SERVICE_ACCT_PRIVATE_KEY}" > ${SERVICE_ACCT_HOME}/.ssh/id_rsa
-  cp ${SERVICE_ACCT_HOME}/.ssh/id_rsa /root/.ssh/id_rsa
+  echo "${SERVICE_ACCT_PRIVATE_KEY}" > ${SERVICE_ACCT_SSH_DIR}/id_rsa
+  cp ${SERVICE_ACCT_SSH_DIR}/id_rsa /root/.ssh/id_rsa
 fi
-
-AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
 
 if [ "${SERVICE_ACCT_PUBLIC_KEY}" != 'CHANGE_ME' ]; then
   echo "### Setting public key for ${SERVICE_ACCT}"
-  echo "${SERVICE_ACCT_PUBLIC_KEY}" > ${SERVICE_ACCT_HOME}/.ssh/id_rsa.pub
+  echo "${SERVICE_ACCT_PUBLIC_KEY}" > ${SERVICE_ACCT_SSH_DIR}/id_rsa.pub
   if [[ -e "$AUTHORIZED_KEYS" ]] && grep -q ${SERVICE_ACCT_PUBLIC_KEY} "$AUTHORIZED_KEYS"; then
 	  echo "#### ${SERVICE_ACCT} public key has already been added to ${AUTHORIZED_KEYS}."
   else
@@ -36,18 +37,33 @@ if [ "${SERVICE_ACCT_PUBLIC_KEY}" != 'CHANGE_ME' ]; then
     echo "#### Success: ${SERVICE_ACCT} public key has been added to ${AUTHORIZED_KEYS}"
   fi
 
-  echo "### Adding public key for ${SERVICE_ACCT} to ${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
-  echo "${SERVICE_ACCT_PUBLIC_KEY}" >> ${SERVICE_ACCT_HOME}/.ssh/id_rsa.pub
-  cp ${SERVICE_ACCT_HOME}/.ssh/id_rsa.pub /root/.ssh/id_rsa.pub
+  echo "### Adding public key for ${SERVICE_ACCT} to ${SERVICE_ACCT_SSH_DIR}/authorized_keys"
+  echo "${SERVICE_ACCT_PUBLIC_KEY}" >> ${SERVICE_ACCT_SSH_DIR}/id_rsa.pub
+  cp ${SERVICE_ACCT_SSH_DIR}/id_rsa.pub /root/.ssh/id_rsa.pub
 fi
 
-chown -R "${SERVICE_ACCT}:${SERVICE_ACCT}" "${SERVICE_ACCT_HOME}/.ssh"
+chown -R "${SERVICE_ACCT}:${SERVICE_ACCT}" "${SERVICE_ACCT_SSH_DIR}"
 
-chmod 0644 ${SERVICE_ACCT_HOME}/.ssh/authorized_keys
-chmod 0644 ${SERVICE_ACCT_HOME}/.ssh/*.pub
-chmod 0644 /root/.ssh/authorized_keys
-chmod 0644 /root/.ssh/*.pub
+if [[ -e "${AUTHORIZED_KEYS}" ]]; then
+  chmod 0644 "${AUTHORIZED_KEYS}"
+else
+  echo "### Disabling sshd due to empty ${AUTHORIZED_KEYS}"
+  touch /etc/service/sshd/down
+fi
 
+if [[ -e "${SERVICE_ACCT_SSH_DIR}/id_rsa.pub" ]]; then
+  chmod 0644 ${SERVICE_ACCT_SSH_DIR}/id_rsa.pub
+fi
+
+if [ -e /root/.ssh/id_rsa.pub ]; then
+  chmod 0644 /root/.ssh/id_rsa.pub
+fi
+
+if [[ "${SERVICE_ACCT_PASSWORD}" == 'CHANGE_ME' ]] && [[ "${SERVICE_ACCT_PASSWORD}" == '' ]]; then
+  echo "#### Disabling sudo due to empty SERVICE_ACCT_PASSWORD"
+  export SERVICE_ACCT_SUDO_ENABLED=0
+  echo -n '0' > /etc/container-environment/SERVICE_ACCT_SUDO_ENABLED
+fi
 
 if [ $SERVICE_ACCT_SUDO_ENABLED -eq 1 ]; then
   echo "### sudo enabled for ${SERVICE_ACCT}"
