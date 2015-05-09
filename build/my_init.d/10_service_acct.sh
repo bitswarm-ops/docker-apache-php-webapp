@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SERVICE_ACCT_SSH_DIR="${SERVICE_ACCT_HOME}/.ssh"
-AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/authorized_keys"
+AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
 
 if [ "${SERVICE_ACCT_PASSWORD}" != 'CHANGE_ME' ]; then
   echo "### Changing service acct password for ${SERVICE_ACCT}"
