@@ -1,13 +1,30 @@
 #!/bin/bash
+set -x
 
 SERVICE_ACCT_SSH_DIR="${SERVICE_ACCT_HOME}/.ssh"
 AUTHORIZED_KEYS="${SERVICE_ACCT_HOME}/.ssh/authorized_keys"
 
-if [ "${SERVICE_ACCT_PASSWORD}" != 'CHANGE_ME' ]; then
+CURRENT_SERVICE_ACCT=`cat /etc/container_environment/CURRENT_SERVICE_ACCT`
+CURRENT_SERVICE_ACCT_PASSWORD=`cat /etc/container_environment/CURRENT_SERVICE_ACCT_PASSWORD`
+CURRENT_SERVICE_ACCT_HOME=`cat /etc/container_environment/CURRENT_SERVICE_ACCT_HOME`
+
+if [ "${SERVICE_ACCT}" != "${CURRENT_SERVICE_ACCT}" ]; then
+  echo "### Changing service acct to ${SERVICE_ACCT} from ${CURRENT_SERVICE_ACCT}"
+  usermod -l ${SERVICE_ACCT} -m -d ${SERVICE_ACCT_HOME} ${CURRENT_SERVICE_ACCT}
+  echo -n "${SERVICE_ACCT}" > /etc/container_environment/CURRENT_SERVICE_ACCT
+  echo -n "${SERVICE_ACCT_HOME}" > /etc/container_environment/CURRENT_SERVICE_ACCT_HOME
+fi
+
+if [ "${SERVICE_ACCT_PASSWORD}" == 'CHANGE_ME' ] || [ "${SERVICE_ACCT_PASSWORD}" == '' ]; then
+  echo "### Removing service acct password for ${SERVICE_ACCT}"
+  passwd -u -d ${SERVICE_ACCT}
+elif [ "${SERVICE_ACCT_PASSWORD}" != "${CURRENT_SERVICE_ACCT_PASSWORD}" ]; then
   echo "### Changing service acct password for ${SERVICE_ACCT}"
   echo "${SERVICE_ACCT}:${SERVICE_ACCT_PASSWORD}" | chpasswd
+  passwd -u ${SERVICE_ACCT}
+  echo -n "${SERVICE_ACCT_PASSWORD}" > /etc/container_environment/CURRENT_SERVICE_ACCT_PASSWORD
 else
-  echo "### Leaving service acct ${SERVICE_ACCT} without a password"
+  echo "### Leaving service acct ${SERVICE_ACCT} password unchanged"
 fi
 
 if [[ ! -e "${SERVICE_ACCT_SSH_DIR}" ]]; then
